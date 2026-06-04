@@ -11,6 +11,8 @@
     content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes"
   >
 
+  <link rel="shortcut icon" href="TemplateData/favicon.ico">
+
   <style>
     html,
     body {
@@ -44,9 +46,9 @@
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
-      width: 280px;
+      width: min(320px, 70vw);
       display: none;
-      z-index: 10;
+      z-index: 20;
     }
 
     #unity-progress-bar-empty {
@@ -60,7 +62,7 @@
     #unity-progress-bar-full {
       width: 0%;
       height: 100%;
-      background: #ffffff;
+      background: #fff;
       border-radius: 999px;
       transition: width 0.15s ease;
     }
@@ -70,7 +72,7 @@
       left: 50%;
       top: 20px;
       transform: translateX(-50%);
-      z-index: 20;
+      z-index: 30;
       display: none;
       max-width: 90vw;
       font-family: Arial, sans-serif;
@@ -78,13 +80,23 @@
       text-align: center;
     }
 
-    /* Hide Unity footer/header/logo/title/fullscreen UI */
+    #unity-warning div {
+      border-radius: 8px;
+      margin-bottom: 8px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Remove Unity default UI */
     #unity-footer,
     #unity-logo,
     #unity-logo-title-footer,
     #unity-fullscreen-button,
     #unity-build-title {
       display: none !important;
+    }
+
+    canvas {
+      image-rendering: auto;
     }
   </style>
 </head>
@@ -104,6 +116,8 @@
 
   <script>
     const canvas = document.querySelector("#unity-canvas");
+    const loadingBar = document.querySelector("#unity-loading-bar");
+    const progressBarFull = document.querySelector("#unity-progress-bar-full");
 
     function unityShowBanner(msg, type) {
       const warningBanner = document.querySelector("#unity-warning");
@@ -114,16 +128,24 @@
 
       const div = document.createElement("div");
       div.innerHTML = msg;
-      warningBanner.appendChild(div);
 
       if (type === "error") {
-        div.style = "background: red; color: white; padding: 10px; border-radius: 8px;";
+        div.style.background = "red";
+        div.style.color = "white";
+        div.style.padding = "10px";
+      } else if (type === "warning") {
+        div.style.background = "yellow";
+        div.style.color = "black";
+        div.style.padding = "10px";
       } else {
-        div.style =
-          type === "warning"
-            ? "background: yellow; color: black; padding: 10px; border-radius: 8px;"
-            : "background: white; color: black; padding: 10px; border-radius: 8px;";
+        div.style.background = "white";
+        div.style.color = "black";
+        div.style.padding = "10px";
+      }
 
+      warningBanner.appendChild(div);
+
+      if (type !== "error") {
         setTimeout(function () {
           if (warningBanner.contains(div)) {
             warningBanner.removeChild(div);
@@ -140,33 +162,32 @@
 
     const config = {
       arguments: [],
-      dataUrl: buildUrl + "/v1.data.br",
-      frameworkUrl: buildUrl + "/v1.framework.js.br",
-      codeUrl: buildUrl + "/v1.wasm.br",
+      dataUrl: buildUrl + "/v1.data.unityweb",
+      frameworkUrl: buildUrl + "/v1.framework.js.unityweb",
+      codeUrl: buildUrl + "/v1.wasm.unityweb",
       streamingAssetsUrl: "StreamingAssets",
       companyName: "DefaultCompany",
       productName: "FreeKickChallenge",
       productVersion: "0.1.0",
       showBanner: unityShowBanner,
 
-      // Better performance on mobile. Remove this line if you want maximum sharpness.
+      // Good balance between sharpness and performance.
       devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2)
     };
 
-    document.querySelector("#unity-loading-bar").style.display = "block";
+    loadingBar.style.display = "block";
 
     const script = document.createElement("script");
     script.src = loaderUrl;
 
     script.onload = () => {
       createUnityInstance(canvas, config, (progress) => {
-        document.querySelector("#unity-progress-bar-full").style.width =
-          100 * progress + "%";
+        progressBarFull.style.width = `${100 * progress}%`;
       })
         .then((unityInstance) => {
-          document.querySelector("#unity-loading-bar").style.display = "none";
+          loadingBar.style.display = "none";
 
-          // Optional: click/tap game once to enter browser fullscreen
+          // Double click/tap to enter browser fullscreen.
           canvas.addEventListener("dblclick", () => {
             unityInstance.SetFullscreen(1);
           });
